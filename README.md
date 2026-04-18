@@ -90,16 +90,19 @@ This framing positions the interface not merely as a UI, but as an **interpretab
 ??? package.json
 ??? vite.config.ts
 ??? tsconfig.json
+??? tsconfig.node.json
+??? tailwind.config.js
+??? postcss.config.js
 ??? src/
-?   ??? main.tsx
-?   ??? App.tsx
-?   ??? components/          # Map and reusable UI components
-?   ??? pages/               # Dashboard and related views
-?   ??? data/                # Static JSON / regional datasets for visualization
-?   ??? assets/              # GeoJSON, icons, images, legacy JS/CSS assets
-?   ??? styles/
-?   ??? types/
-??? ...
+    ??? main.tsx
+    ??? App.tsx
+    ??? components/          # Map and reusable UI components
+    ??? pages/               # Dashboard and related views
+    ??? data/                # Static JSON / regional datasets for visualization
+    ??? assets/              # GeoJSON, icons, images, demo screenshots, legacy JS/CSS
+    ??? styles/
+    ??? types/
+    ??? utils/
 ```
 
 Large demonstration videos and bulky media artifacts are typically excluded from version control; place them locally or distribute via release assets as needed.

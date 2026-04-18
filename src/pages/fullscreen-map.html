@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>京都市道路ネットワーク全体図</title>
+    <link rel="stylesheet" href="../styles/fullscreen-map.css">
+</head>
+<body>
+    <div id="fullscreenMap"></div>
+
+    <div class="controls">
+        <button class="control-btn" id="zoomIn">+</button>
+        <button class="control-btn" id="zoomOut">−</button>
+        <button class="control-btn fullscreen-btn" id="fullscreenBtn" title="全画面表示 / 全画面解除">⛶</button>
+        <button class="control-btn close-btn" id="closeBtn">✕</button>
+    </div>
+
+    <div class="map-title">京都市道路ネットワーク全体図</div>
+
+    <script src="/src/assets/js/echarts.min.js"></script>
+    <script type="module">
+        import kyotoRoadsComplete from '/src/assets/kyoto_roads_complete.json';
+        import { kyotoLandmarks, landmarkStyles } from '/src/data/kyotoLandmarks.ts';
+
+        console.log('全屏地图页面加载');
+
+        // SVG 图标路径映射
+        const LANDMARK_ICON_URLS = {
+            temple: '/src/assets/icons/temple-outline.svg',
+            shrine: '/src/assets/icons/shinto-shrine.svg',
+            castle: '/src/assets/icons/japanese-castle.svg',
+            station: '/src/assets/icons/train-station.svg',
+            museum: '/src/assets/icons/museum.svg',
+            river: '/src/assets/icons/river.svg',
+            tower: '/src/assets/icons/tower.svg',
+            university: '/src/assets/icons/university.svg',
+            marketplace: '/src/assets/icons/marketplace.svg',
+            scenic: '/src/assets/icons/mountain.svg'
+        };
+
+        // 加载 SVG 并转换为 image:// URL
+        async function loadSVGAsDataUrl(url) {
+            try {
+                const response = await fetch(url);
+                const svgText = await response.text();
+                const blob = new Blob([svgText], { type: 'image/svg+xml' });
+                return URL.createObjectURL(blob);
+            } catch (error) {
+                console.error('Failed to load SVG:', url, error);
+                return null;
+            }
+        }
+
+        // 预加载所有 SVG 图标
+        const iconCache = {};
+        async function preloadIcons() {
+            const promises = Object.entries(LANDMARK_ICON_URLS).map(async ([type, url]) => {
+                const dataUrl = await loadSVGAsDataUrl(url);
+                if (dataUrl) {
+                    iconCache[type] = dataUrl;
+                }
+            });
+            await Promise.all(promises);
+            console.log('✓ SVG图标预加载完成:', Object.keys(iconCache).length, '个');
+        }
+
+        // 加载并初始化地图
+        async function initMap() {
+            try {
+                // 预加载 SVG 图标
+                await preloadIcons();
+
+                // 加载京都背景地图
+                const kyotoBgResponse = await fetch('/src/assets/kyoto.geojson');
+                const kyotoBgData = await kyotoBgResponse.json();
+                echarts.registerMap('京都道路背景', kyotoBgData);
+
+                const mapContainer = document.getElementById('fullscreenMap');
+                const chart = echarts.init(mapContainer);
+
+                // 定义京都市区主干道列表（用于光点流动效果）
+                const mainRoadNames = [
+                    '今出川通',      // 今出川通
+                    '東大路通',      // 东大路通
+                    '北大路通',      // 北大路通
+                    '五条通',        // 五条通
+                    '七条通',        // 七条通
+                    '御池通',        // 御池通
+                    '堀川通'         // 堀川通
+                ];
+
+                // 处理道路数据 - 使用统一淡蓝色
+                const roadsData = kyotoRoadsComplete.features.map((feature) => {
+                    const coords = feature.geometry.coordinates;
+                    const props = feature.properties;
+                    const highway = props.highway || 'unknown';
+
+                    // 根据道路等级设置线宽
+                    let roadLevel = 'minor';
+                    let lineWidth = 2;
+
+                    if (highway === 'motorway' || highway === 'trunk') {
+                        roadLevel = 'major';
+                        lineWidth = 5;
+                    } else if (highway === 'primary') {
+                        roadLevel = 'primary';
+                        lineWidth = 4;
+                    } else if (highway === 'secondary') {
+                        roadLevel = 'secondary';
+                        lineWidth = 3;
+                    } else if (highway === 'tertiary') {
+                        roadLevel = 'tertiary';
+                        lineWidth = 2;
+                    }
+
+                    // 判断是否为市区主干道（用于光点效果）
+                    const roadName = props.N01_002 || '';
+                    const isMainRoad = mainRoadNames.some(name => roadName.includes(name));
+
+                    return {
+                        name: roadName || '道路',
+                        coords,
+                        roadLevel,
+                        isMainRoad,  // 标记是否为市区主干道
+                        lineStyle: {
+                            width: lineWidth,
+                            color: 'rgba(12, 90, 138, 0.5)',  // 统一淡蓝色
+                            opacity: 0.5
+                        }
+                    };
+                });
+
+                // 筛选出市区主干道用于光点效果
+                const mainRoadsData = roadsData.filter(road => road.isMainRoad);
+                console.log('✓ 市区主幹道データ:', mainRoadsData.length, '件');
+
+                console.log('道路数据处理完成:', roadsData.length, '条');
+
+                // ランドマークデータの準備
+                const prepareLandmarkData = () => {
+                    const landmarksByType = {};
+
+                    kyotoLandmarks.forEach(landmark => {
+                        if (!landmarksByType[landmark.type]) {
+                            landmarksByType[landmark.type] = [];
+                        }
+
+                        // 获取对应的 SVG 图标 URL
+                        const iconUrl = iconCache[landmark.type];
+
+                        landmarksByType[landmark.type].push({
+                            name: landmark.name,
+                            value: landmark.coordinates,
+                            itemStyle: {
+                                color: landmarkStyles[landmark.type].color
+                            },
+                            symbol: iconUrl ? `image://${iconUrl}` : landmarkStyles[landmark.type].symbol,
+                            symbolSize: landmarkStyles[landmark.type].symbolSize,
+                            type: landmark.type,
+                            description: landmark.description,
+                            district: landmark.district
+                        });
+                    });
+
+                    return landmarksByType;
+                };
+
+                const landmarksByType = prepareLandmarkData();
+                console.log('✓ ランドマークデータ準備完了:', kyotoLandmarks.length, '件');
+
+                // 更新道路显示（所有道路始终显示，统一淡蓝色）
+                const updateRoadsByZoom = (zoom) => {
+                    const series = [
+                        // 三级道路层 - 始终显示
+                        {
+                            name: '三級道路',
+                            type: 'lines',
+                            coordinateSystem: 'geo',
+                            data: roadsData.filter(r => r.roadLevel === 'tertiary'),
+                            polyline: true,
+                            lineStyle: {
+                                width: 2,
+                                color: 'rgba(12, 90, 138, 0.5)',
+                                opacity: 0.5,
+                                curveness: 0
+                            },
+                            silent: true,
+                            zlevel: 2
+                        },
+                        // 二级道路层 - 始终显示
+                        {
+                            name: '二級道路',
+                            type: 'lines',
+                            coordinateSystem: 'geo',
+                            data: roadsData.filter(r => r.roadLevel === 'secondary'),
+                            polyline: true,
+                            lineStyle: {
+                                width: 3,
+                                color: 'rgba(12, 90, 138, 0.5)',
+                                opacity: 0.5,
+                                curveness: 0
+                            },
+                            silent: true,
+                            zlevel: 3
+                        },
+                        // 一级道路层 - 始终显示
+                        {
+                            name: '一級道路',
+                            type: 'lines',
+                            coordinateSystem: 'geo',
+                            data: roadsData.filter(r => r.roadLevel === 'primary'),
+                            polyline: true,
+                            lineStyle: {
+                                width: 4,
+                                color: 'rgba(12, 90, 138, 0.5)',
+                                opacity: 0.5,
+                                curveness: 0
+                            },
+                            silent: true,
+                            zlevel: 4
+                        },
+                        // 主干道层 - 始终显示
+                        {
+                            name: '主幹道路',
+                            type: 'lines',
+                            coordinateSystem: 'geo',
+                            data: roadsData.filter(r => r.roadLevel === 'major'),
+                            polyline: true,
+                            lineStyle: {
+                                width: 5,
+                                color: 'rgba(12, 90, 138, 0.5)',
+                                opacity: 0.5,
+                                curveness: 0
+                            },
+                            silent: true,
+                            zlevel: 5
+                        },
+                        // 市区主干道光点流动效果层
+                        {
+                            name: '市区主幹道車流',
+                            type: 'lines',
+                            coordinateSystem: 'geo',
+                            data: mainRoadsData,
+                            polyline: true,
+                            effect: {
+                                show: true,
+                                period: 4,
+                                trailLength: 0.1,
+                                symbol: 'circle',
+                                symbolSize: 4,
+                                color: '#00f2ff',
+                                loop: true
+                            },
+                            lineStyle: {
+                                width: 0,
+                                opacity: 0
+                            },
+                            silent: true,
+                            zlevel: 6
+                        }
+                    ];
+
+                    // 景点标注层（始终显示）
+                    Object.entries(landmarksByType).forEach(([type, landmarks]) => {
+                        const style = landmarkStyles[type];
+                        series.push({
+                            name: style.label,
+                            type: 'scatter',
+                            coordinateSystem: 'geo',
+                            data: landmarks,
+                            symbol: landmarks[0]?.symbol || style.symbol, // 使用数据中的 symbol（SVG图标）
+                            symbolSize: style.symbolSize * 1.2, // 稍微放大图标
+                            itemStyle: {
+                                color: style.color,
+                                borderColor: '#ffffff',
+                                borderWidth: 0, // SVG图标不需要边框
+                                shadowBlur: 10,
+                                shadowColor: style.color
+                            },
+                            emphasis: {
+                                scale: 1.5,
+                                itemStyle: {
+                                    shadowBlur: 20,
+                                    shadowColor: style.color
+                                }
+                            },
+                            label: {
+                                show: true,
+                                position: 'top',
+                                formatter: '{b}',
+                                fontSize: 12,
+                                color: '#ffffff',
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                padding: [4, 8],
+                                borderRadius: 3,
+                                distance: 5
+                            },
+                            zlevel: 10
+                        });
+                    });
+
+                    return series;
+                };
+
+                // 配置地图
+                const mapOption = {
+                    backgroundColor: '#0a1f3d',
+                    tooltip: {
+                        show: true,
+                        trigger: 'item',
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        borderColor: '#00d4ff',
+                        borderWidth: 1,
+                        textStyle: {
+                            color: '#ffffff',
+                            fontSize: 14
+                        },
+                        formatter: (params) => {
+                            if (params.componentSubType === 'scatter') {
+                                const data = params.data;
+                                let html = `<div style="padding: 5px;">
+                                    <div style="font-weight: bold; font-size: 16px; margin-bottom: 5px; color: ${params.color};">
+                                        ${data.name}
+                                    </div>`;
+                                
+                                if (data.district) {
+                                    html += `<div style="margin-bottom: 3px;">📍 ${data.district}</div>`;
+                                }
+                                
+                                if (data.description) {
+                                    html += `<div style="margin-top: 5px; font-size: 12px; color: #aaaaaa;">
+                                        ${data.description}
+                                    </div>`;
+                                }
+                                
+                                html += `</div>`;
+                                return html;
+                            }
+                            return '';
+                        }
+                    },
+                    geo: {
+                        map: '京都道路背景',
+                        roam: true,
+                        center: [135.768, 35.011],
+                        zoom: 15.0,
+                        scaleLimit: { min: 0.5, max: 100 },
+                        aspectScale: 0.75,
+                        silent: true,
+                        itemStyle: {
+                            areaColor: 'rgba(0, 168, 232, 0.15)',
+                            borderColor: '#00a8e8',
+                            borderWidth: 2
+                        },
+                        emphasis: { disabled: true }
+                    },
+                    series: updateRoadsByZoom(15.0)
+                };
+
+                chart.setOption(mapOption);
+
+                setTimeout(() => {
+                    chart.resize();
+                }, 100);
+
+                // 窗口大小变化时重新调整
+                window.addEventListener('resize', () => {
+                    chart.resize();
+                });
+
+                // 缩放按钮事件
+                document.getElementById('zoomIn').addEventListener('click', () => {
+                    const currentOption = chart.getOption();
+                    const currentZoom = currentOption.geo[0].zoom || 15.0;
+                    const newZoom = currentZoom * 1.3;
+
+                    currentOption.geo[0].zoom = newZoom;
+                    currentOption.series = updateRoadsByZoom(newZoom);
+                    chart.setOption(currentOption, { notMerge: true });
+                });
+
+                document.getElementById('zoomOut').addEventListener('click', () => {
+                    const currentOption = chart.getOption();
+                    const currentZoom = currentOption.geo[0].zoom || 15.0;
+                    const newZoom = currentZoom / 1.3;
+
+                    currentOption.geo[0].zoom = newZoom;
+                    currentOption.series = updateRoadsByZoom(newZoom);
+                    chart.setOption(currentOption, { notMerge: true });
+                });
+
+                // 全屏按钮事件
+                const fullscreenBtn = document.getElementById('fullscreenBtn');
+                fullscreenBtn.addEventListener('click', () => {
+                    if (!document.fullscreenElement) {
+                        // 进入全屏
+                        document.documentElement.requestFullscreen().then(() => {
+                            console.log('✓ 全画面モードに入りました');
+                            fullscreenBtn.textContent = '⛶'; // 或者改成退出全屏的图标
+                        }).catch(err => {
+                            console.error('全画面モード失敗:', err);
+                            alert('全画面表示に失敗しました。ブラウザの権限を確認してください。');
+                        });
+                    } else {
+                        // 退出全屏
+                        document.exitFullscreen().then(() => {
+                            console.log('✓ 全画面モードを解除しました');
+                            fullscreenBtn.textContent = '⛶';
+                        }).catch(err => {
+                            console.error('全画面解除失敗:', err);
+                        });
+                    }
+                });
+
+                // 监听全屏状态变化
+                document.addEventListener('fullscreenchange', () => {
+                    const btn = document.getElementById('fullscreenBtn');
+                    if (document.fullscreenElement) {
+                        btn.textContent = '⛶'; // 全屏时显示退出图标
+                        btn.title = '全画面解除';
+                    } else {
+                        btn.textContent = '⛶'; // 非全屏时显示进入图标
+                        btn.title = '全画面表示';
+                    }
+                });
+
+                // 关闭按钮事件
+                document.getElementById('closeBtn').addEventListener('click', () => {
+                    window.close();
+                });
+
+                console.log('✓ 全屏地図初期化成功');
+
+                // 页面加载后尝试自动进入全屏模式
+                const tryAutoFullscreen = () => {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen()
+                            .then(() => {
+                                console.log('✓ 自動全画面モード成功');
+                                // 成功后移除事件监听
+                                document.removeEventListener('click', tryAutoFullscreen);
+                                document.removeEventListener('mousemove', tryAutoFullscreen);
+                                document.removeEventListener('keydown', tryAutoFullscreen);
+                            })
+                            .catch(err => {
+                                console.log('自動全画面失敗:', err.message);
+                            });
+                    }
+                };
+
+                // 立即尝试（Safari 可能成功）
+                setTimeout(() => {
+                    tryAutoFullscreen();
+                }, 300);
+
+                // 监听用户的第一次交互（Chrome 需要）
+                document.addEventListener('click', tryAutoFullscreen, { once: true });
+                document.addEventListener('mousemove', tryAutoFullscreen, { once: true });
+                document.addEventListener('keydown', tryAutoFullscreen, { once: true });
+            } catch (error) {
+                console.error('地图初始化失败:', error);
+            }
+        }
+
+        initMap();
+    </script>
+</body>
+</html>

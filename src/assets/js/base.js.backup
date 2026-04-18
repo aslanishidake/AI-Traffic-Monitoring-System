@@ -1,0 +1,1304 @@
+function fnW(str) {
+    var num;
+    str >= 10 ? num = str : num = "0" + str;
+    return num;
+}
+//获取当前时间
+var timer = setInterval(function () {
+    var date = new Date();
+    var year = date.getFullYear(); //当前年份
+    var month = date.getMonth(); //当前月份
+    var data = date.getDate(); //天
+    var hours = date.getHours(); //小时
+    var minute = date.getMinutes(); //分
+    var second = date.getSeconds(); //秒
+    var day = date.getDay(); //获取当前星期几 
+    
+    // 日本曜日（星期）
+    var weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+    var weekDay = weekDays[day];
+    
+    $('#time').html(fnW(hours) + ":" + fnW(minute) + ":" + fnW(second));
+    $('#date').html('<span>' + year + '年' + (month + 1) + '月' + data + '日</span><span>（' + weekDay + '）</span>')
+
+}, 1000)
+
+
+$('.select').on('blur', function () {
+        $(this).find('.select-ul').hide();
+    })
+    //下拉框点击出现下拉框内容
+$('.select-div').on('click', function () {
+    if ($(this).siblings('.select-ul').is(":hidden")) {
+        $(this).siblings('.select-ul').show();
+    } else {
+        $(this).siblings('.select-ul').hide();
+    }
+})
+
+
+$('.select-ul').on('click', 'li', function () {
+    $(this).addClass('active').siblings('li').removeClass('active').parent().hide().siblings('.select-div').html($(this).html());
+    var parentDiv = $(this).parent().parent().parent();
+})
+
+//鼠标滑动到按钮，按钮内容变成白色
+var imgName;
+$('.title-box').children('button').hover(function () {
+    imgName = $(this).children('img').attr('src').split('.png')[0];
+    $(this).children('img').attr('src', imgName + '_on.png');
+}, function () {
+    $(this).children('img').attr('src', imgName + '.png');
+
+});
+
+
+var startColor = ['#0e94eb', '#c440ef', '#efb013', '#2fda07', '#d8ef13', '#2e4af8', '#0eebc4', '#f129b1', '#17defc', '#f86363'];
+var borderStartColor = ['#0077c5', '#a819d7', '#c99002', '#24bc00', '#b6cb04', '#112ee2', '#00bd9c', '#ce078f', '#00b2cd', '#ec3c3c'];
+
+
+
+//入库量占比，带边框效果的饼图
+function chart1() {
+    //data 为模拟数据
+    var data = [{
+        name: '顺丰',
+        value: 192581,
+        percent: '30.8721',
+    }, {
+        name: '京东',
+        value: 215635,
+        percent: '34.076',
+    }, {
+        name: 'EMS',
+        value: 224585,
+        percent: '35.49',
+    }];
+    var myChart = echarts.init(document.getElementById('pie'));
+    var myChart1 = echarts.init(document.getElementById('pie1'));
+    window.addEventListener('resize', function () {
+        myChart.resize();
+        myChart1.resize();
+    });
+
+    var str = '';
+    for (var i = 0; i < data.length; i++) {
+        str += '<p><span><i class="legend" style="background:' + startColor[i] + '"></i></span>' + data[i].name + '<span class="pie-number" style="color:' + startColor[i] + '">' + data[i].value + '</span>' + Number(data[i].percent).toFixed(2) + '%</p>';
+    }
+
+    $('.pie-data').append(str);
+
+
+    function deepCopy(obj) {
+        if (typeof obj !== 'object') {
+            return obj;
+        }
+        var newobj = {};
+        for (var attr in obj) {
+            newobj[attr] = obj[attr];
+        }
+        return newobj;
+    }
+    var xData = [],
+        yData = [];
+    data.map((a, b) => {
+        xData.push(a.name);
+        yData.push(a.value);
+    });
+
+
+    var RealData = [];
+    var borderData = [];
+    data.map((item, index) => {
+        var newobj = deepCopy(item);
+        var newobj1 = deepCopy(item);
+        RealData.push(newobj);
+        borderData.push(newobj1);
+    });
+    RealData.map((item, index) => {
+        item.itemStyle = {
+            normal: {
+                color: {
+                    type: 'linear',
+                    x: 0,
+                    y: 0,
+                    x2: 0,
+                    y2: 1,
+                    colorStops: [{
+                        offset: 0,
+                        color: startColor[index] // 0% 处的颜色
+                }, {
+                        offset: 1,
+                        color: startColor[index] // 100% 处的颜色
+                }],
+                    globalCoord: false // 缺省为 false
+                },
+            }
+        }
+    });
+    borderData.map((item, index) => {
+        item.itemStyle = {
+            normal: {
+                color: {
+                    type: 'linear',
+                    x: 0,
+                    y: 0,
+                    x2: 0,
+                    y2: 1,
+                    colorStops: [{
+                        offset: 0,
+                        color: borderStartColor[index] // 0% 处的颜色
+                }, {
+                        offset: 1,
+                        color: borderStartColor[index] // 100% 处的颜色
+                }],
+                    globalCoord: false // 缺省为 false
+                },
+            }
+        }
+    });
+    var option = {
+        tooltip: {
+            trigger: 'item',
+            //            position: ['30%', '50%'],
+            confine: true,
+            formatter: "{a} <br/>{b}: {c} ({d}%)"
+        },
+        series: [
+        // 主要展示层的
+            {
+                radius: ['50%', '85%'],
+                center: ['50%', '50%'],
+                type: 'pie',
+                label: {
+                    normal: {
+                        show: false
+                    },
+                    emphasis: {
+                        show: false
+                    }
+                },
+                labelLine: {
+                    normal: {
+                        show: false
+                    },
+                    emphasis: {
+                        show: false
+                    }
+                },
+                name: "派件入库量占比内容",
+                data: RealData
+        },
+        // 边框的设置
+            {
+                radius: ['45%', '50%'],
+                center: ['50%', '50%'],
+                type: 'pie',
+                label: {
+                    normal: {
+                        show: false
+                    },
+                    emphasis: {
+                        show: false
+                    }
+                },
+                labelLine: {
+                    normal: {
+                        show: false
+                    },
+                    emphasis: {
+                        show: false
+                    }
+                },
+                animation: false,
+                tooltip: {
+                    show: false
+                },
+                data: borderData
+        }
+    ]
+    };
+
+    myChart.setOption(option);
+    myChart1.setOption(option);
+}
+
+//chart1()
+
+//----------------------派件入库量占比内容end---------------
+
+//------------广东省寄派件数据内容---------------
+//点击筛选按钮
+$('#filBtn').on('click', function () {
+        if ($('#filCon').is(":hidden")) {
+            $('#filCon').attr('style', 'display:flex');
+        } else {
+            $('#filCon').hide();
+        }
+    })
+    //点击筛选按钮end
+
+
+// ✅ chart2 函数已删除
+// 该函数用于初始化左下角京都区域地图（gdMap）和弹窗地图（gdMaps）
+// 已在 LogisticsDashboard.tsx 中用 TypeScript 重新实现
+// 删除原因：避免与新代码冲突，导致地图被覆盖
+
+addCityBtn(cityName);
+
+function addCityBtn(data) {
+    var li_con = '';
+    for (var i = 0; i < data.length; i++) {
+        li_con += '<li>' + data[i].name + '</li>'
+    }
+    $('#city').html(li_con);
+    $('#citys').html(li_con);
+}
+
+$('.city-btn').on('click', 'li', function () {
+    var str;
+    var patt = [/[a-z]/i, /[a-e]/i, /[f-i]/i, /[k-o]/i, /[p-t]/i, /[u-z]/i];
+    var index = $(this).index();
+    var li_con = '';
+    for (var i = 0; i < cityName.length; i++) {
+        str = cityName[i].firstP;
+        if (patt[index].test(str)) {
+            li_con += '<li>' + cityName[i].name + '</li>'
+        }
+    }
+
+    $(this).addClass('active').siblings('li').removeClass('active');
+    if (index == 0) {
+        $('#city').children().removeClass('active');
+        if ($(this).parent().data('city') == 1) {
+            $('.ranking-box').show();
+            if ($("#barType").find('.active').data('value') == 1) {
+                $('#titleQ').html('<span>全网</span>到珠海');
+            } else if ($("#barType").find('.active').data('value') == 2) {
+                $('#titleQ').html('珠海到<span>全网</span>')
+            }
+            $('#city').html(li_con);
+        } else if ($(this).parent().data('city') == 2) {
+            if ($('.cont-div').eq(0).css('visibility') != 'hidden') {
+                $('.ranking-box').show();
+            }
+            if ($("#barTypes").find('.active').data('value') == 1) {
+                $('#titleQs').html('<span>全网</span>到珠海');
+            } else if ($("#barTypes").find('.active').data('value') == 2) {
+                $('#titleQs').html('珠海到<span>全网</span>')
+            }
+            $('#citys').html(li_con);
+        }
+    } else {
+        if ($(this).parent().data('city') == 1) {
+            $('#city').html(li_con);
+        } else if ($(this).parent().data('city') == 2) {
+            $('#citys').html(li_con);
+        }
+    }
+
+
+})
+
+
+$('#city').on('click', 'li', function () {
+    $(this).addClass('active').siblings('li').removeClass('active');
+    $('.center-bottom .ranking-box').hide();
+    if ($("#barType").find('.active').data('value') == 1) {
+        $('#titleQ').html('<span>' + $(this).html() + '</span>到珠海');
+    } else if ($("#barType").find('.active').data('value') == 2) {
+        $('#titleQ').html('珠海到<span>' + $(this).html() + '</span>')
+    }
+})
+
+$('#citys').on('click', 'li', function () {
+    $(this).addClass('active').siblings('li').removeClass('active');
+    $('.pop-data .ranking-box').hide();
+    if ($("#barTypes").find('.active').data('value') == 1) {
+        $('#titleQs').html('<span>' + $(this).html() + '</span>到珠海');
+    } else if ($("#barTypes").find('.active').data('value') == 2) {
+        $('#titleQs').html('珠海到<span>' + $(this).html() + '</span>')
+    }
+})
+
+//寄派件选择
+$("#barType").on('click', 'li', function () {
+    $(this).addClass('active').siblings('li').removeClass('active');
+    $('#barTitle').html($(this).html() + '数据');
+    $('#tabBtn').data('state', $(this).data('value'));
+    if ($(this).data('value') == 1) {
+        $('.table1').eq(0).show().siblings('table').hide();
+    } else if ($(this).data('value') == 2) {
+        $('.table1').eq(1).show().siblings('table').hide();
+    }
+    chart3($(this).data('value'), 0);
+    chart4(chart4Data, $(this).data('value'), 0);
+})
+
+//寄派件选择
+$("#barTypes").on('click', 'li', function () {
+    $(this).addClass('active').siblings('li').removeClass('active');
+    $('#barTitles').html($(this).html() + '数据');
+    $('#tabBtns').data('state', $(this).data('value'));
+    if ($(this).data('value') == 1) {
+        $('.table2').eq(0).show().siblings('table').hide();
+    } else if ($(this).data('value') == 2) {
+        $('.table2').eq(1).show().siblings('table').hide();
+    }
+    chart3($(this).data('value'), 1);
+    chart4(chart4Data, $(this).data('value'), 1);
+
+})
+
+
+function chart3(type, chartType) {
+    var myChart = echarts.init(document.getElementById('chart3'));
+    var myCharts = echarts.init(document.getElementById('chart3s'));
+    window.addEventListener('resize', function () {
+        myChart.resize();
+        myCharts.resize();
+    });
+
+    //    设置背景阴影的参数，获取数据的最大值
+
+    var data; //横坐标数据，不动
+    var data_; //模拟数据
+    if (type == 1) {
+        data_ = [{
+                name: "入库件",
+                value: 584
+            },
+            {
+                name: "滞留件",
+                value: 152
+            }, {
+                name: "丢失件",
+                value: 100
+            },
+            {
+                name: "正常件",
+                value: 689
+            },
+            {
+                name: "派送件",
+                value: 200
+            }, {
+                name: "自提件",
+                value: 121
+            }, {
+                name: "退签件",
+                value: 92
+            }]
+    } else if (type == 2) {
+        data_ = [{
+                name: "入库件",
+                value: 568
+                }, {
+                name: "丢失件",
+                value: 287
+                }, {
+                name: "滞留件",
+                value: 120
+                },
+            {
+                name: "撤销件",
+                value: 152
+                },
+            {
+                name: "出库件",
+                value: 125
+                }, {
+                name: "正常件",
+                value: 122
+        }]
+    }
+    var series_data; //绘制图表的数据
+    //绘制图表
+    var yMax = 0;
+    for (var j = 0; j < data_.length; j++) {
+        if (yMax < data_[j].value) {
+            yMax = data_[j].value;
+        }
+    }
+    var dataShadow = [];
+    for (var i = 0; i < 10; i++) {
+        dataShadow.push(yMax * 2);
+    }
+
+    if (type == 1) {
+        data = ['入库件', '在库件', '出库件', '退签件', '丢失件'];
+
+        if (chartType == '') {
+            $(' .dph-data1').html(data_[0].value);
+            $(' .dph-data2').html(data_[1].value + data_[3].value);
+            $(' .dph-data3').html(data_[3].value);
+            $(' .dph-data4').html(data_[2].value);
+            $(' .dph-data5').html(data_[1].value);
+            $(' .dph-data6').html(data_[4].value + data_[5].value);
+            $(' .dph-data7').html(data_[4].value);
+            $(' .dph-data8').html(data_[5].value);
+            $(' .dph-data9').html(data_[6].value);
+        } else if (chartType == 0) {
+            $('.table1 .dph-data1').html(data_[0].value);
+            $('.table1 .dph-data2').html(data_[1].value + data_[3].value);
+            $('.table1 .dph-data3').html(data_[3].value);
+            $('.table1 .dph-data4').html(data_[2].value);
+            $('.table1 .dph-data5').html(data_[1].value);
+            $('.table1 .dph-data6').html(data_[4].value + data_[5].value);
+            $('.table1 .dph-data7').html(data_[4].value);
+            $('.table1 .dph-data8').html(data_[5].value);
+            $('.table1 .dph-data9').html(data_[6].value);
+        } else if (chartType == 1) {
+            $('.table2 .dph-data1').html(data_[0].value);
+            $('.table2 .dph-data2').html(data_[1].value + data_[3].value);
+            $('.table2 .dph-data3').html(data_[3].value);
+            $('.table2 .dph-data4').html(data_[2].value);
+            $('.table2 .dph-data5').html(data_[1].value);
+            $('.table2 .dph-data6').html(data_[4].value + data_[5].value);
+            $('.table2 .dph-data7').html(data_[4].value);
+            $('.table2 .dph-data8').html(data_[5].value);
+            $('.table2 .dph-data9').html(data_[6].value);
+        }
+
+        series_data = [
+            { // For shadow
+                type: 'bar',
+                barWidth: 20,
+                xAxisIndex: 2,
+                tooltip: {
+                    show: false
+                },
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(14, 148, 235, 0.102)'
+                    }
+                },
+                data: dataShadow,
+                animation: false
+            },
+            {
+                name: '入库件',
+                type: 'bar',
+                barGap: '-100%',
+                barWidth: '40%',
+                xAxisIndex: 1,
+                itemStyle: {
+                    normal: {
+                        color: '#0e94eb'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+                data: [data_[0], 0, 0, 0, 0],
+            },
+            {
+                name: '滞留件',
+                type: 'bar',
+                stack: '在库件',
+                xAxisIndex: 1,
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(239,176,19,.9)'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+                data: [0, data_[1], 0, 0, 0],
+            },
+            {
+                name: '丢失件',
+                type: 'bar',
+                xAxisIndex: 1,
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(239,176,19,0.4)'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+                data: [0, 0, 0, 0, data_[2]],
+            },
+            {
+                name: '正常件',
+                type: 'bar',
+                stack: '在库件',
+                xAxisIndex: 1,
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(239,176,19,0.3)'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+                data: [0, data_[3], 0, 0, 0],
+            },
+            {
+                name: '派送件',
+                type: 'bar',
+                stack: '出库件',
+                xAxisIndex: 1,
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(196,64,239,0.8)'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+                data: [0, 0, data_[4], 0, 0],
+            },
+            {
+                name: '自提件',
+                type: 'bar',
+                stack: '出库件',
+                xAxisIndex: 1,
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(196,64,239,0.4)'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+                data: [0, 0, data_[5], 0, 0],
+            },
+            {
+                name: '退签件',
+                type: 'bar',
+                xAxisIndex: 1,
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(219,44,44,0.8)'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+                data: [0, 0, 0, data_[6], 0],
+            }
+        ]
+
+
+    } else if (type == 2) {
+        data = ['入库件', '在库件', '出库件', '丢失件', '撤销件'];
+        if (chartType == '') {
+            $('.mail-data1').html(data_[0].value);
+            $('.mail-data2').html(data_[2].value + data_[5].value);
+            $('.mail-data3').html(data_[1].value);
+            $('.mail-data4').html(data_[2].value);
+            $('.mail-data5').html(data_[3].value);
+            $('.mail-data6').html(data_[4].value);
+            $('.mail-data7').html(data_[5].value);
+        } else if (chartType == 0) {
+            $('.table1 .mail-data1').html(data_[0].value);
+            $('.table1 .mail-data2').html(data_[2].value + data_[5].value);
+            $('.table1 .mail-data3').html(data_[1].value);
+            $('.table1 .mail-data4').html(data_[2].value);
+            $('.table1 .mail-data5').html(data_[3].value);
+            $('.table1 .mail-data6').html(data_[4].value);
+            $('.table1 .mail-data7').html(data_[5].value);
+        } else if (chartType == 1) {
+            $('.table2 .mail-data1').html(data_[0].value);
+            $('.table2 .mail-data2').html(data_[2].value + data_[5].value);
+            $('.table2 .mail-data3').html(data_[1].value);
+            $('.table2 .mail-data4').html(data_[2].value);
+            $('.table2 .mail-data5').html(data_[3].value);
+            $('.table2 .mail-data6').html(data_[4].value);
+            $('.table2 .mail-data7').html(data_[5].value);
+        }
+
+        series_data = [
+            { // For shadow
+                type: 'bar',
+                barWidth: 20,
+                xAxisIndex: 2,
+                tooltip: {
+                    show: false
+                },
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(14, 148, 235, 0.102)'
+                    }
+                },
+                data: dataShadow,
+                animation: false
+            },
+            {
+                name: '入库件',
+                barGap: '-100%',
+                barWidth: '40%',
+                type: 'bar',
+                xAxisIndex: 1,
+                itemStyle: {
+                    normal: {
+                        color: '#0e94eb'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+                data: [data_[0], 0, 0, 0, 0],
+            },
+            {
+                name: '正常件',
+                type: 'bar',
+                stack: '在库件',
+                xAxisIndex: 1,
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(239,176,19,.9)'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+                data: [0, data_[5], 0, 0, 0, 0],
+                },
+            {
+                name: '丢失件',
+                type: 'bar',
+                xAxisIndex: 1,
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(239,176,19,.9)'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+                data: [0, 0, 0, data_[1], 0],
+                    },
+            {
+                name: '滞留件',
+                type: 'bar',
+                xAxisIndex: 1,
+                stack: '在库件',
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(239,176,19,0.4)'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+
+                data: [0, data_[2], 0, 0, 0],
+                    },
+            {
+                name: '撤销件',
+                type: 'bar',
+                xAxisIndex: 1,
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(239,176,19,0.3)'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+                data: [0, 0, 0, 0, data_[3]],
+                    },
+            {
+                name: '出库件',
+                type: 'bar',
+                xAxisIndex: 1,
+                stack: '退签件',
+                itemStyle: {
+                    normal: {
+                        color: 'rgba(196,64,239,0.8)'
+                    },
+                    emphasis: {
+                        opacity: 1
+                    }
+                },
+                data: [0, 0, data_[4], 0, 0],
+                    }
+
+                    ]
+    }
+
+    var option = {
+        title: '',
+        grid: {
+            top: '10%',
+            containLabel: true
+        },
+        tooltip: {
+            show: true
+        },
+        xAxis: [{
+                type: 'category',
+                show: false,
+                data: data,
+                axisLabel: {
+                    textStyle: {
+                        color: '#fff'
+                    }
+                }
+            },
+            {
+                type: 'category',
+                position: "bottom",
+                data: data,
+                boundaryGap: true,
+                // offset: 40,
+                axisTick: {
+                    show: false
+                },
+                axisLine: {
+                    show: false
+                },
+                axisLabel: {
+                    textStyle: {
+                        color: '#fff'
+                    }
+                }
+            },
+            {
+                show: false,
+                data: dataShadow,
+                axisLabel: {
+                    inside: true,
+                    textStyle: {
+                        color: '#fff'
+                    }
+                },
+                axisTick: {
+                    show: false
+                },
+                axisLine: {
+                    show: false
+                },
+                z: 10
+        },
+        ],
+        yAxis: [{
+                show: true,
+                splitLine: {
+                    show: false,
+                    lineStyle: {
+                        color: "#0e94eb"
+                    }
+                },
+                axisTick: {
+                    show: false
+                },
+                axisLine: {
+                    show: false
+                },
+                axisLabel: {
+                    show: true,
+                    color: '#0e94eb'
+                }
+        }, {
+                show: false,
+                type: "value",
+                nameTextStyle: {
+                    color: '#0e94eb'
+                },
+                axisLabel: {
+                    color: '#0e94eb'
+                },
+                splitLine: {
+                    show: false
+                },
+                axisLine: {
+                    show: false
+                },
+                axisTick: {
+                    show: false
+                }
+        },
+            {
+                axisLine: {
+                    show: false
+                },
+                axisTick: {
+                    show: false
+                },
+                axisLabel: {
+                    textStyle: {
+                        color: '#999'
+                    }
+                }
+                }],
+        //        color: ['#e54035'],
+        series: series_data
+    }
+    if (chartType === '') {
+        myChart.clear();
+        myCharts.clear();
+        myChart.setOption(option);
+        myCharts.setOption(option);
+    } else if (chartType === 0) {
+        myChart.clear();
+        myChart.setOption(option);
+    } else if (chartType === 1) {
+        myCharts.clear();
+        myCharts.setOption(option);
+    }
+}
+
+//chart3(1, '')
+    //
+    //
+    //
+$('#dateBtn').on('click', function () {
+    if ($('#timeBox').is(":hidden")) {
+        $('#timeBox').show();
+        document.getElementById('timeBox').focus();
+
+    } else {
+        $('#timeBox').hide();
+    }
+})
+
+$('#dateBtns').on('click', function () {
+    if ($('#timeBoxs').is(":hidden")) {
+        $('#timeBoxs').show();
+        document.getElementById('timeBoxs').focus();
+
+    } else {
+        $('#timeBoxs').hide();
+    }
+})
+
+$('#switchBtn').on('click', 'span', function () {
+    $(this).addClass('active').siblings().removeClass('active');
+    if ($(this).data('datatype') == 'income') {
+        $('#totalProfit').html('123,456.5元');
+    } else if ($(this).data('datatype') == 'expend') {
+        $('#totalProfit').html('32,111.4元');
+    }
+})
+
+$('#tabBtn').on('click', function () {
+    var _this = $(this);
+    if ($('.right-top').children('.chart-box').is(':hidden')) {
+        _this.children('span').html('图表');
+        $('.right-top').children('.chart-box').show().siblings('.data-box').hide();
+
+    } else {
+        _this.children('span').html('表格');
+        $('.right-top').children('.data-box').show().siblings('.chart-box').hide();
+        if (_this.data('state') == 1) {
+            $('.table1').eq(0).show().siblings('table').hide();
+        } else if (_this.data('state') == 2) {
+            $('.table1').eq(1).show().siblings('table').hide();
+        }
+    }
+})
+
+
+$('#tabBtns').on('click', function () {
+    var _this = $(this);
+    if (_this.siblings('.pop-chart').is(':hidden')) {
+        _this.children('span').html('图表');
+        _this.siblings('.pop-chart').show().siblings('.data-box').hide();
+
+    } else {
+        _this.children('span').html('表格');
+        _this.siblings('.data-box').show().siblings('.chart-box').hide();
+        if (_this.data('state') == 1) {
+            $('.table2').eq(0).show().siblings('table').hide();
+        } else if (_this.data('state') == 2) {
+            $('.table2').eq(1).show().siblings('table').hide();
+        }
+    }
+})
+
+
+
+
+//时间选择器
+var startV = '';
+var endV = '';
+laydate.skin('danlan');
+var startTime = {
+    elem: '#startTime',
+    format: 'YYYY-MM-DD',
+    min: '1997-01-01', //设定最小日期为当前日期
+    max: laydate.now(), //最大日期
+    istime: true,
+    istoday: true,
+    fixed: false,
+    choose: function (datas) {
+        startV = datas;
+        endTime.min = datas; //开始日选好后，重置结束日的最小日期
+    }
+};
+var endTime = {
+    elem: '#endTime',
+    format: 'YYYY-MM-DD',
+    min: laydate.now(),
+    max: laydate.now(),
+    istime: true,
+    istoday: true,
+    fixed: false,
+    choose: function (datas) {
+        //        startTime.max = datas; //结束日选好后，重置开始日的最大日期
+        endV = datas;
+    }
+};
+
+laydate(startTime);
+laydate(endTime);
+
+//时间选择器
+var startVs = '';
+var endVs = '';
+laydate.skin('danlan');
+var startTimes = {
+    elem: '#startTimes',
+    format: 'YYYY-MM-DD',
+    min: '1997-01-01', //设定最小日期为当前日期
+    max: '2099-06-16', //最大日期
+    istime: true,
+    istoday: true,
+    fixed: false,
+    choose: function (datas) {
+        startVs = datas;
+        endTimes.min = datas; //开始日选好后，重置结束日的最小日期
+        setQgData($('#barTypes').parent().parent(), 1);
+    }
+};
+var endTimes = {
+    elem: '#endTimes',
+    format: 'YYYY-MM-DD',
+    min: laydate.now(),
+    max: laydate.now(),
+    istime: true,
+    istoday: true,
+    fixed: false,
+    choose: function (datas) {
+        //        startTime.max = datas; //结束日选好后，重置开始日的最大日期
+        endVs = datas;
+        setQgData($('#barTypes').parent().parent(), 1);
+    }
+};
+
+laydate(startTimes);
+laydate(endTimes);
+
+//点击时间选择器的时候更改样式
+$('#endTime').on('click', function () {
+    dateCss();
+})
+
+$('#end').on('click', function () {
+    dateCss();
+})
+
+
+//更改日期插件的样式
+function dateCss() {
+    var arr = $('#laydate_box').attr('style').split(';');
+    var cssStr =
+        'position:absolute;right:0;';
+    for (var i = 0; i < arr.length; i++) {
+        if (arr[i].indexOf('top') != -1) {
+            cssStr += arr[i];
+        }
+    }
+
+    $('#laydate_box').attr('style', cssStr);
+}
+
+
+
+//chart4Data模拟数据
+var chart4Data = [{
+    'name': "天津市",
+    'value': 178546
+    }, {
+    'name': "湖南省",
+    'value': 125687
+    }, {
+    'name': "福建省",
+    'value': 78452
+    }, {
+    'name': "北京市",
+    'value': 57841
+    }, {
+    'name': "江苏省",
+    'value': 45879
+    }, {
+    'name': "海南",
+    'value': 28584
+    }, {
+    'name': "四川省",
+    'value': 14852
+    }, {
+    'name': "浙江省",
+    'value': 12589
+    }, {
+    'name': "重庆市",
+    'value': 5261
+    }, {
+    'name': "香港特别行政区",
+    'value': 2563
+    }, {
+    'name': "内蒙古",
+    'value': 856
+    }]
+chart4(chart4Data, 1, '');
+
+function chart4(data, type, chartType) {
+    var str = '<li><span></span><p>城市</p><p>派件</p></li>';
+    for (var i = 0; i < 10; i++) {
+        str += '<li><span>' + (i + 1) + '</span><p>' + data[i].name + '</p><p>' + data[i].value + '</p></li>';
+    }
+
+    var s_data = [];
+    var myChart = echarts.init(document.getElementById('chart4'));
+    var myCharts = echarts.init(document.getElementById('chart4s'));
+    window.addEventListener('resize', function () {
+        myChart.resize();
+        myCharts.resize();
+    });
+
+
+    function formtGCData(geoData, data, srcNam, dest) {
+        var tGeoDt = [];
+        if (dest) {
+            for (var i = 0, len = data.length; i < len; i++) {
+                if (srcNam != data[i].name) {
+                    tGeoDt.push({
+                        coords: [geoData[srcNam], geoData[data[i].name]],
+                    });
+                }
+            }
+        } else {
+            for (var i = 0, len = data.length; i < len; i++) {
+                if (srcNam != data[i].name) {
+                    tGeoDt.push({
+                        coords: [geoData[data[i].name], geoData[srcNam]],
+                    });
+                }
+            }
+        }
+        return tGeoDt;
+    }
+
+    function formtVData(geoData, data, srcNam) {
+        var tGeoDt = [];
+        for (var i = 0, len = data.length; i < len; i++) {
+            var tNam = data[i].name
+            if (srcNam != tNam) {
+                tGeoDt.push({
+                    name: tNam,
+                    symbolSize: 2,
+                    itemStyle: {
+                        normal: {
+                            color: '#ffeb40',
+                        }
+                    },
+                    value: geoData[tNam]
+                });
+            }
+
+        }
+        tGeoDt.push({
+            name: srcNam,
+            value: geoData[srcNam],
+            symbolSize: 5,
+            itemStyle: {
+                normal: {
+                    color: '#2ef358',
+                }
+            }
+
+        });
+        return tGeoDt;
+    }
+
+    var planePath = 'pin';
+    if (type == 2) {
+        s_data.push({
+            type: 'lines',
+            zlevel: 2,
+            mapType: 'china',
+            symbol: 'none',
+            effect: {
+                show: true,
+                period: 1.5,
+                trailLength: 0.1,
+                //                color: '#ffeb40',
+                color: '#2ef358',
+                symbol: planePath,
+                symbolSize: 6,
+                trailLength: 0.5
+
+            },
+            lineStyle: {
+                normal: {
+                    color: '#2ef358',
+                    width: 1,
+                    opacity: 0.4,
+                    curveness: 0.2
+                }
+            },
+            data: formtGCData(geoCoordMap, data, '珠海', true)
+        })
+
+    } else if (type == 1) {
+        s_data.push({
+            type: 'lines',
+            zlevel: 2,
+            effect: {
+                show: true,
+                period: 1.5,
+                trailLength: 0.1,
+                //                color: '#2ef358',
+                color: '#ffeb40',
+                symbol: planePath,
+                symbolSize: 6,
+                trailLength: 0.5
+            },
+            lineStyle: {
+                normal: {
+                    color: '#ffeb40',
+                    width: 1,
+                    opacity: 0.4,
+                    curveness: 0.2
+                }
+            },
+            data: formtGCData(geoCoordMap, data, '珠海', false)
+        }, {
+
+            type: 'effectScatter',
+            coordinateSystem: 'geo',
+            zlevel: 2,
+            rippleEffect: {
+                period: 4,
+                scale: 2.5,
+                brushType: 'stroke'
+            },
+            symbol: 'none',
+            symbolSize: 4,
+            itemStyle: {
+                normal: {
+                    color: '#fff'
+                }
+            },
+
+            data: formtVData(geoCoordMap, data, '珠海')
+        })
+    }
+
+    var option = {
+        tooltip: {
+            trigger: 'item',
+        },
+        geo: {
+            map: 'china',
+            label: {
+                show: true,
+                position: 'insideLeft',
+                color: 'white',
+                fontSize: '10',
+                emphasis: {
+                    show: true
+                }
+            },
+            roam: true,
+            silent: true,
+            itemStyle: {
+                normal: {
+                    areaColor: 'transparent',
+                    borderColor: '#0e94eb',
+                    shadowBlur: 10,
+                    shadowColor: '#0e94ea'
+                }
+            },
+            left: 10,
+            right: 10
+        },
+        series: s_data
+    };
+    if (chartType === '') {
+        $('.ranking-box').html(str);
+        myChart.setOption(option);
+        myCharts.setOption(option);
+    } else if (chartType === 0) {
+        $('.center-bottom .ranking-box').html(str);
+        myChart.setOption(option);
+    } else if (chartType === 1) {
+        $('.pop-data .ranking-box').html(str);
+        myCharts.setOption(option);
+    }
+}
+
+$('.close-pop').on('click', function () {
+    $(this).parent().parent().hide().find('.cont-div').attr('style', 'visibility: hidden');
+})
+
+$('#setBtn').on('click', function () {
+    $('.container').attr('style', 'visibility: visible').find('.pop-up').eq(4).attr('style', 'visibility: visible').siblings().attr('style', 'visibility: hidden');
+
+})
+
+var workDate;
+var time = {
+    elem: '#times',
+    format: 'YYYY-MM-DD',
+    min: laydate.now(),
+    max: laydate.now() + 30,
+    istime: true,
+    istoday: true,
+    fixed: false,
+    choose: function (datas) {
+        //        startTime.max = datas; //结束日选好后，重置开始日的最大日期
+        workDate = datas;
+    }
+};
+
+laydate(time);
+
+$('#addT').on('click', function () {
+    $('#mineusT').show();
+    if ($(this).siblings('input').length < 6) {
+        if ($(this).siblings('input').length == 5) {
+            $(this).hide();
+        }
+        $(this).before('<input type="text" value="">');
+    }
+
+})
+
+$('#mineusT').on('click', function () {
+    if ($(this).siblings('input').length > 1) {
+        if ($(this).siblings('input').length == 6) {
+            $('#addT').show();
+        } else if ($(this).siblings('input').length == 2) {
+            $(this).hide()
+        }
+        $(this).siblings('input:last').remove();
+    }
+})
+
+$('#addL').on('click', function () {
+    $('#mineusL').show();
+    if ($(this).siblings('input').length < 3) {
+        if ($(this).siblings('input').length == 2) {
+            $(this).hide();
+        }
+        $(this).before('<input type="text" value="">');
+    }
+
+})
+
+$('#mineusL').on('click', function () {
+    if ($(this).siblings('input').length > 1) {
+        if ($(this).siblings('input').length == 3) {
+            $('#addL').show();
+        } else if ($(this).siblings('input').length == 2) {
+            $(this).hide()
+        }
+        $(this).siblings('input:last').remove();
+    }
+})

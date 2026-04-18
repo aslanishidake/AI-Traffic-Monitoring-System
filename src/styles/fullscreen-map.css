@@ -1,0 +1,87 @@
+/* 全屏地图独立页面样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #0a1f3d;
+    font-family: "Microsoft YaHei", sans-serif;
+}
+
+#fullscreenMap {
+    width: 100%;
+    height: 100%;
+}
+
+.controls {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+}
+
+.control-btn {
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, rgba(0, 168, 232, 0.9) 0%, rgba(0, 212, 255, 0.8) 100%);
+    border: 2px solid #00d4ff;
+    border-radius: 5px;
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.control-btn:hover {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 1) 0%, rgba(0, 242, 255, 1) 100%);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+    transform: scale(1.05);
+}
+
+.close-btn {
+    background: linear-gradient(135deg, rgba(255, 68, 68, 0.9) 0%, rgba(255, 102, 102, 0.8) 100%);
+    border-color: #ff6666;
+}
+
+.close-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 102, 102, 1) 0%, rgba(255, 136, 136, 1) 100%);
+    box-shadow: 0 0 20px rgba(255, 102, 102, 0.8);
+}
+
+.fullscreen-btn {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.9) 0%, rgba(39, 174, 96, 0.8) 100%);
+    border-color: #2ecc71;
+    font-size: 24px;
+}
+
+.fullscreen-btn:hover {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 1) 0%, rgba(39, 174, 96, 1) 100%);
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.8);
+}
+
+.map-title {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 30px;
+    font-weight: bold;
+    color: #00d4ff;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+    z-index: 1000;
+    letter-spacing: 2px;
+}
+

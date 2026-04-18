@@ -27,3 +27,6 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# Large demo videos (exceed GitHub file limits; keep locally or use Git LFS / release assets)
+src/video/*.mp4
